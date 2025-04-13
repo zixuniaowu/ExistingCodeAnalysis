@@ -1,0 +1,87 @@
+@startuml
+class io.github.mariazevedo88.travelsjavaapi.model.security.JwtUser {
+- {static} long serialVersionUID
+- Long id
+- String username
+- String password
+- Collection<? extends GrantedAuthority> authorities
++ Collection<? extends GrantedAuthority> getAuthorities()
++ String getPassword()
++ String getUsername()
++ boolean isAccountNonExpired()
++ boolean isAccountNonLocked()
++ boolean isCredentialsNonExpired()
++ boolean isEnabled()
++ Long getId()
+}
+
+
+class io.github.mariazevedo88.travelsjavaapi.model.statistic.Statistic {
+- {static} long serialVersionUID
+- Long id
+- BigDecimal sum
+- BigDecimal avg
+- BigDecimal max
+- BigDecimal min
+- long count
++ StatisticDTO convertEntityToDTO()
+}
+
+
+class io.github.mariazevedo88.travelsjavaapi.model.travel.Travel {
+- {static} long serialVersionUID
+- Long id
+- String orderNumber
+- LocalDateTime startDate
+- LocalDateTime endDate
+- BigDecimal amount
+- TravelTypeEnum type
+- Account account
++ TravelDTO convertEntityToDTO()
+}
+
+
+class io.github.mariazevedo88.travelsjavaapi.model.account.Account {
+- {static} long serialVersionUID
+- Long id
+- String accountNumber
+- AccountTypeEnum accountType
++ AccountDTO convertEntityToDTO()
+}
+
+
+class io.github.mariazevedo88.travelsjavaapi.model.user.UserAccount {
+- {static} long serialVersionUID
+- Long id
+- User user
+- Account account
++ UserAccountDTO convertEntityToDTO()
+}
+
+
+class io.github.mariazevedo88.travelsjavaapi.model.user.User {
+- {static} long serialVersionUID
+- Long id
+- String name
+- String password
+- String email
+- RoleEnum role
++ boolean isAdmin()
++ UserDTO convertEntityToDTO()
+}
+
+
+class io.github.mariazevedo88.travelsjavaapi.model.security.JwtUserFactory {
++ {static} JwtUser create(User)
+- {static} List<GrantedAuthority> createGrantedAuthorities(RoleEnum)
+}
+
+
+
+org.springframework.security.core.userdetails.UserDetails <|.. io.github.mariazevedo88.travelsjavaapi.model.security.JwtUser
+java.io.Serializable <|.. io.github.mariazevedo88.travelsjavaapi.model.statistic.Statistic
+java.io.Serializable <|.. io.github.mariazevedo88.travelsjavaapi.model.travel.Travel
+java.io.Serializable <|.. io.github.mariazevedo88.travelsjavaapi.model.account.Account
+java.io.Serializable <|.. io.github.mariazevedo88.travelsjavaapi.model.user.UserAccount
+java.io.Serializable <|.. io.github.mariazevedo88.travelsjavaapi.model.user.User
+@enduml

@@ -1,0 +1,166 @@
+@startuml
+
+!theme plain
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+skinparam monochrome false
+skinparam shadowing false
+skinparam linetype ortho
+
+title "APItravel System - Component Diagram"
+
+package "Travels Java API" {
+  [TravelsJavaApiApplication] as App #lightblue
+  
+  package "Configuration" {
+    [SecurityConfiguration] as SecConfig #lightgrey
+    [SwaggerConfiguration] as SwaggerConfig #lightgrey
+    [CacheConfiguration] as CacheConfig #lightgrey
+  }
+  
+  package "API Layer" {
+    package "Controller" {
+      [TravelController] as TravelCtrl #lightgreen
+      [AccountController] as AccountCtrl #lightgreen
+      [UserController] as UserCtrl #lightgreen
+      [StatisticController] as StatisticsCtrl #lightgreen
+      [AuthenticationController] as AuthCtrl #lightgreen
+    }
+    
+    package "Filters" {
+      [JwtAuthenticationTokenFilter] as JwtFilter #white
+      [JwtAuthenticationEntryPointFilter] as JwtEntryPoint #white
+    }
+  }
+  
+  package "Service Layer" {
+    [TravelService] as TravelSrv #lightyellow
+    [AccountService] as AccountSrv #lightyellow
+    [UserService] as UserSrv #lightyellow
+    [StatisticService] as StatisticSrv #lightyellow
+    [JwtUserDetailsService] as UserDetailsSrv #lightyellow
+  }
+  
+  package "Repository Layer" {
+    [TravelRepository] as TravelRepo #lightpink
+    [AccountRepository] as AccountRepo #lightpink
+    [UserRepository] as UserRepo #lightpink
+    [StatisticRepository] as StatisticRepo #lightpink
+  }
+  
+  package "Model Layer" {
+    package "Entities" {
+      [Travel] as TravelEntity #aliceblue
+      [Account] as AccountEntity #aliceblue
+      [User] as UserEntity #aliceblue
+      [Statistic] as StatisticEntity #aliceblue
+      [UserAccount] as UserAccountEntity #aliceblue
+    }
+    
+    package "Security" {
+      [JwtUser] as JwtUserModel #aliceblue
+      [JwtUserFactory] as JwtUserFactory #aliceblue
+    }
+    
+    package "DTOs" {
+      [TravelDTO] as TravelDTO #aliceblue
+      [AccountDTO] as AccountDTO #aliceblue
+      [UserDTO] as UserDTO #aliceblue
+      [StatisticDTO] as StatisticDTO #aliceblue
+      [TokenDTO] as TokenDTO #aliceblue
+    }
+  }
+  
+  package "Utilities" {
+    [TravelsApiUtil] as ApiUtil #white
+    [JwtTokenUtil] as TokenUtil #white
+    [CacheEventLogger] as CacheLogger #white
+  }
+}
+
+database "PostgreSQL" as DB #lightgrey
+
+cloud "Spring Boot Admin" as Admin #lightgrey
+
+actor "API Client" as Client
+
+' 接続関係
+Client --> TravelCtrl : HTTP Requests
+Client --> AuthCtrl : Authentication
+Client --> UserCtrl : User management
+Client --> AccountCtrl : Account management
+Client --> StatisticsCtrl : Statistics
+
+App --> SecConfig : uses
+App --> SwaggerConfig : uses
+App --> CacheConfig : uses
+
+TravelCtrl --> TravelSrv : uses
+AccountCtrl --> AccountSrv : uses
+UserCtrl --> UserSrv : uses
+StatisticsCtrl --> StatisticSrv : uses
+AuthCtrl --> UserDetailsSrv : uses
+AuthCtrl --> TokenUtil : uses
+
+TravelSrv --> TravelRepo : uses
+AccountSrv --> AccountRepo : uses
+UserSrv --> UserRepo : uses
+StatisticSrv --> StatisticRepo : uses
+UserDetailsSrv --> UserSrv : uses
+UserDetailsSrv --> JwtUserFactory : uses
+
+TravelRepo --> TravelEntity : maps
+AccountRepo --> AccountEntity : maps
+UserRepo --> UserEntity : maps
+StatisticRepo --> StatisticEntity : maps
+
+TravelEntity --> TravelDTO : converts to
+AccountEntity --> AccountDTO : converts to
+UserEntity --> UserDTO : converts to
+StatisticEntity --> StatisticDTO : converts to
+
+JwtUserFactory --> JwtUserModel : creates
+JwtUserFactory --> UserEntity : uses
+
+TravelRepo --> DB : persists
+AccountRepo --> DB : persists
+UserRepo --> DB : persists
+StatisticRepo --> DB : persists
+
+SecConfig --> JwtFilter : configures
+SecConfig --> JwtEntryPoint : configures
+JwtFilter --> TokenUtil : uses
+JwtFilter --> UserDetailsSrv : uses
+
+TravelSrv --> CacheLogger : uses
+TravelSrv --> ApiUtil : uses
+
+App --> Admin : reports to
+
+note right of JwtFilter
+  Intercepts and validates 
+  JWT tokens in requests
+end note
+
+note right of TravelSrv
+  Implements business logic
+  for Travel management
+end note
+
+note bottom of DB
+  PostgreSQL database
+  "travels"
+end note
+
+note top of Client
+  External systems or 
+  applications that 
+  consume the API
+end note
+
+note right of CacheConfig
+  EHCache configuration
+  for Travel caching
+end note
+
+@enduml

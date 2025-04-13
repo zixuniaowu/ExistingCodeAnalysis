@@ -1,0 +1,165 @@
+@startuml
+
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 20
+skinparam maxmessagesize 200
+
+title "APItravel System - Main Sequence Flows"
+
+actor "API Client" as client
+participant "AuthenticationController" as authController
+participant "TravelController" as travelController
+participant "JwtUserDetailsServiceImpl" as userDetailsService
+participant "TravelServiceImpl" as travelService
+participant "TravelRepository" as travelRepo
+participant "UserService" as userService
+participant "JwtTokenUtil" as jwtUtil
+database "Database" as db
+
+== Authentication Flow ==
+
+client -> authController: POST /api-travels/v1/auth\n(JwtUserDTO with email/password)
+activate authController
+
+authController -> authController: Validate request data
+authController -> userDetailsService: loadUserByUsername(email)
+activate userDetailsService
+
+userDetailsService -> userService: findByEmail(email)
+activate userService
+userService -> db: execute query
+userService <-- db: return User
+userDetailsService <-- userService: return Optional<User>
+deactivate userService
+
+userDetailsService -> userDetailsService: JwtUserFactory.create(user)
+authController <-- userDetailsService: return UserDetails
+deactivate userDetailsService
+
+authController -> jwtUtil: getToken(userDetails)
+activate jwtUtil
+authController <-- jwtUtil: return JWT token
+deactivate jwtUtil
+
+client <-- authController: return TokenDTO with JWT
+deactivate authController
+
+== Travel Creation Flow ==
+
+client -> travelController: POST /api-travels/v1/travels with JWT token\n(TravelDTO)
+activate travelController
+
+travelController -> travelController: Validate request data
+travelController -> travelController: isTravelDTOEndDateGreaterThanStartDate(dto)
+travelController -> travelController: dto.convertDTOToEntity()
+
+travelController -> travelService: save(travel)
+activate travelService
+travelService -> travelRepo: save(travel)
+activate travelRepo
+travelRepo -> db: execute insert
+travelRepo <-- db: return Travel entity
+travelService <-- travelRepo: return Travel entity
+deactivate travelRepo
+travelController <-- travelService: return Travel entity
+deactivate travelService
+
+travelController -> travelController: travelToCreate.convertEntityToDTO()
+travelController -> travelController: createSelfLink(travelToCreate, dtoSaved)
+
+client <-- travelController: return TravelDTO with HATEOAS links
+deactivate travelController
+
+== Travel Search Flow ==
+
+client -> travelController: GET /api-travels/v1/travels/byOrderNumber/{orderNumber} with JWT token
+activate travelController
+
+travelController -> travelService: findByOrderNumber(orderNumber)
+activate travelService
+travelService -> travelRepo: findByOrderNumber(orderNumber)
+activate travelRepo
+travelRepo -> db: execute query
+travelRepo <-- db: return Travel entity
+travelService <-- travelRepo: return Optional<Travel>
+deactivate travelRepo
+travelController <-- travelService: return Optional<Travel>
+deactivate travelService
+
+travelController -> travelController: travel.convertEntityToDTO()
+travelController -> travelController: createSelfLinkInCollections()
+
+client <-- travelController: return TravelDTO with HATEOAS links
+deactivate travelController
+
+== Travel Update Flow ==
+
+client -> travelController: PUT /api-travels/v1/travels/{id} with JWT token\n(TravelDTO)
+activate travelController
+
+travelController -> travelController: Validate request data
+travelController -> travelController: isTravelDTOEndDateGreaterThanStartDate(dto)
+
+travelController -> travelService: findById(id)
+activate travelService
+travelService -> travelRepo: findById(id)
+activate travelRepo
+travelRepo -> db: execute query
+travelRepo <-- db: return Travel entity or empty
+travelService <-- travelRepo: return Optional<Travel>
+deactivate travelRepo
+travelController <-- travelService: return Travel or throw TravelNotFoundException
+deactivate travelService
+
+travelController -> travelController: dto.convertDTOToEntity()
+
+travelController -> travelService: save(travel)
+activate travelService
+travelService -> travelRepo: save(travel)
+activate travelRepo
+travelRepo -> db: execute update
+travelRepo <-- db: return updated Travel entity
+travelService <-- travelRepo: return updated Travel
+deactivate travelRepo
+travelController <-- travelService: return updated Travel
+deactivate travelService
+
+travelController -> travelController: travelToUpdate.convertEntityToDTO()
+travelController -> travelController: createSelfLink(travelToUpdate, itemDTO)
+
+client <-- travelController: return updated TravelDTO with HATEOAS links
+deactivate travelController
+
+== Travel Deletion Flow ==
+
+client -> travelController: DELETE /api-travels/v1/travels/{id} with JWT token
+activate travelController
+
+travelController -> travelService: findById(id)
+activate travelService
+travelService -> travelRepo: findById(id)
+activate travelRepo
+travelRepo -> db: execute query
+travelRepo <-- db: return Travel entity or empty
+travelService <-- travelRepo: return Optional<Travel>
+deactivate travelRepo
+travelController <-- travelService: return Travel or throw TravelNotFoundException
+deactivate travelService
+
+travelController -> travelService: deleteById(id)
+activate travelService
+travelService -> travelRepo: deleteById(id)
+activate travelRepo
+travelRepo -> db: execute delete
+travelRepo <-- db: confirm deletion
+travelService <-- travelRepo: void
+deactivate travelRepo
+travelController <-- travelService: void
+deactivate travelService
+
+client <-- travelController: return confirmation message
+deactivate travelController
+
+@enduml

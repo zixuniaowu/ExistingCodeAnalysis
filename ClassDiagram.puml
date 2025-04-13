@@ -1,0 +1,135 @@
+@startuml
+
+/' スタイル設定 '/
+skinparam class {
+    BackgroundColor White
+    ArrowColor Black
+    BorderColor Black
+}
+
+interface Serializable
+interface UserDetails
+
+/' エンティティクラス '/
+class Account {
+    -Long id
+    -String accountNumber
+    -AccountTypeEnum accountType
+    +Account(Long id)
+    +convertEntityToDTO(): AccountDTO
+}
+
+class Travel {
+    -Long id
+    -String orderNumber
+    -LocalDateTime startDate
+    -LocalDateTime endDate
+    -BigDecimal amount
+    -TravelTypeEnum type
+    -Account account
+    +Travel(TravelTypeEnum type)
+    +convertEntityToDTO(): TravelDTO
+}
+
+class User {
+    -Long id
+    -String name
+    -String password
+    -String email
+    -RoleEnum role
+    +User(Long id)
+    +isAdmin(): boolean
+    +convertEntityToDTO(): UserDTO
+}
+
+class UserAccount {
+    -Long id
+    -User user
+    -Account account
+    +convertEntityToDTO(): UserAccountDTO
+}
+
+class Statistic {
+    -Long id
+    -BigDecimal sum
+    -BigDecimal avg
+    -BigDecimal max
+    -BigDecimal min
+    -long count
+    +Statistic(BigDecimal sum, BigDecimal avg, BigDecimal max, BigDecimal min, long count)
+    +convertEntityToDTO(): StatisticDTO
+}
+
+/' セキュリティクラス '/
+class JwtUser {
+    -Long id
+    -String username
+    -String password
+    -Collection<? extends GrantedAuthority> authorities
+    +JwtUser(Long id, String username, String password, Collection<? extends GrantedAuthority> authorities)
+    +JwtUser(String username, String password)
+    +getAuthorities(): Collection<? extends GrantedAuthority>
+    +getPassword(): String
+    +getUsername(): String
+    +isAccountNonExpired(): boolean
+    +isAccountNonLocked(): boolean
+    +isCredentialsNonExpired(): boolean
+    +isEnabled(): boolean
+    +getId(): Long
+}
+
+class JwtUserFactory <<Utility>> {
+    +{static} create(User user): JwtUser
+    -{static} createGrantedAuthorities(RoleEnum role): List<GrantedAuthority>
+}
+
+/' 列挙型 '/
+enum AccountTypeEnum {
+    FREE
+    BASIC
+    PREMIUM
+    +getValue(): String
+}
+
+enum RoleEnum {
+    ROLE_ADMIN
+    ROLE_USER
+    +getValue(): String
+}
+
+enum TravelTypeEnum {
+    ONE_WAY
+    RETURN
+    MULTI_CITY
+    +getValue(): String
+}
+
+/' アプリケーションクラス '/
+class TravelsJavaApiApplication {
+    +{static} main(String[] args): void
+}
+
+/' 関係の定義 '/
+Account ..|> Serializable
+Travel ..|> Serializable
+User ..|> Serializable
+UserAccount ..|> Serializable
+Statistic ..|> Serializable
+
+JwtUser ..|> UserDetails
+JwtUserFactory ..> User
+JwtUserFactory ..> JwtUser
+JwtUserFactory ..> RoleEnum
+
+Travel "*" --> "1" Account : belongs to
+UserAccount "*" --> "1" User : belongs to
+UserAccount "*" --> "1" Account : belongs to
+
+User --> RoleEnum : has role
+Account --> AccountTypeEnum : has type
+Travel --> TravelTypeEnum : has type
+
+note "All entities implement Serializable and use JPA @Entity annotation" as N1
+note "Security classes implement Spring Security interfaces" as N2
+
+@enduml
